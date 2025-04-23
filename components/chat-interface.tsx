@@ -10,6 +10,10 @@ import ChatSession from "@/components/chat-session"
 import type { ChatMessage, Session } from "@/lib/types"
 import LoadingIndicator from "@/components/loading-indicator"
 
+
+// Inside your message rendering logic
+
+
 interface ChatInterfaceProps {
   sessions: Session[]
   setSessions: React.Dispatch<React.SetStateAction<Session[]>>
