@@ -10,9 +10,7 @@ import ChatSession from "@/components/chat-session"
 import type { ChatMessage, Session } from "@/lib/types"
 import LoadingIndicator from "@/components/loading-indicator"
 
-
 // Inside your message rendering logic
-
 
 interface ChatInterfaceProps {
   sessions: Session[]
@@ -21,14 +19,14 @@ interface ChatInterfaceProps {
   setActiveSessionId: React.Dispatch<React.SetStateAction<string>>
 }
 
-// Your API endpoint
-const API_ENDPOINT = "http://20.84.56.193:8000/chat"
+// Update your API_ENDPOINT to use the proxy route instead
+const API_ENDPOINT = "/api/proxy"
 
 export default function ChatInterface({
   sessions,
   setSessions,
   activeSessionId,
-  setActiveSessionId
+  setActiveSessionId,
 }: ChatInterfaceProps) {
   const [input, setInput] = useState("")
   const [imageUpload, setImageUpload] = useState<File | null>(null)
@@ -45,13 +43,12 @@ export default function ChatInterface({
     const updateTime = () => {
       const now = new Date()
       const timeString = now.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
       })
       setCurrentTime(timeString)
     }
-
     // Update time immediately
     updateTime()
 
@@ -65,8 +62,8 @@ export default function ChatInterface({
     // This should only run on initial mount
     if (initialized) return
 
-    const savedSessions = localStorage.getItem('chatSessions')
-    const savedActiveSessionId = localStorage.getItem('activeSessionId')
+    const savedSessions = localStorage.getItem("chatSessions")
+    const savedActiveSessionId = localStorage.getItem("activeSessionId")
 
     if (savedSessions) {
       try {
@@ -79,20 +76,18 @@ export default function ChatInterface({
           lastUpdated: new Date(session.lastUpdated),
           messages: session.messages.map((message: any) => ({
             ...message,
-            timestamp: new Date(message.timestamp)
-          }))
+            timestamp: new Date(message.timestamp),
+          })),
         }))
 
         if (processedSessions.length > 0) {
           const mostRecentSession = processedSessions.reduce(
-            (latest, session) =>
-              new Date(session.lastUpdated) > new Date(latest.lastUpdated) ? session : latest,
-            processedSessions[0]
+            (latest, session) => (new Date(session.lastUpdated) > new Date(latest.lastUpdated) ? session : latest),
+            processedSessions[0],
           )
           setSessions(processedSessions)
           setActiveSessionId(mostRecentSession.id)
         }
-
       } catch (error) {
         console.error("Error loading sessions from localStorage:", error)
       }
@@ -107,14 +102,14 @@ export default function ChatInterface({
 
     if (sessions.length > 0) {
       try {
-        localStorage.setItem('chatSessions', JSON.stringify(sessions))
+        localStorage.setItem("chatSessions", JSON.stringify(sessions))
       } catch (error) {
         console.error("Error saving sessions to localStorage:", error)
       }
     }
 
     if (activeSessionId) {
-      localStorage.setItem('activeSessionId', activeSessionId)
+      localStorage.setItem("activeSessionId", activeSessionId)
     }
   }, [sessions, activeSessionId, initialized])
 
@@ -172,7 +167,7 @@ export default function ChatInterface({
 
     // Save to localStorage immediately to prevent loss
     try {
-      localStorage.setItem('chatSessions', JSON.stringify(updatedSessions))
+      localStorage.setItem("chatSessions", JSON.stringify(updatedSessions))
     } catch (error) {
       console.error("Error saving to localStorage:", error)
     }
@@ -195,6 +190,30 @@ export default function ChatInterface({
       if (!response.ok) {
         throw new Error("Failed to send message")
       }
+      const allowCors = fn => async (req, res) => {
+        res.setHeader('Access-Control-Allow-Credentials', true)
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        // another common pattern
+        // res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
+        res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT')
+        res.setHeader(
+          'Access-Control-Allow-Headers',
+          'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+        )
+        if (req.method === 'OPTIONS') {
+          res.status(200).end()
+          return
+        }
+        return await fn(req, res)
+      }
+
+      const handler = (req, res) => {
+        const d = new Date()
+        res.end(d.toString())
+      }
+
+      module.exports = allowCors(handler)
+
 
       const data = await response.json()
       const responseMessage: ChatMessage = {
@@ -202,7 +221,7 @@ export default function ChatInterface({
         role: "assistant",
         content: data?.response || "Sorry, I couldn't process your request.",
         timestamp: new Date(),
-        agent: data?.agent || "Unknown"
+        agent: data?.agent || "Unknown",
       }
 
       // Update sessions with AI response
@@ -220,7 +239,7 @@ export default function ChatInterface({
 
       // Save to localStorage to prevent loss
       try {
-        localStorage.setItem('chatSessions', JSON.stringify(finalSessions))
+        localStorage.setItem("chatSessions", JSON.stringify(finalSessions))
       } catch (error) {
         console.error("Error saving to localStorage:", error)
       }
@@ -246,7 +265,7 @@ export default function ChatInterface({
 
       setSessions(errorSessions)
       try {
-        localStorage.setItem('chatSessions', JSON.stringify(errorSessions))
+        localStorage.setItem("chatSessions", JSON.stringify(errorSessions))
       } catch (error) {
         console.error("Error saving to localStorage:", error)
       }
@@ -270,9 +289,7 @@ export default function ChatInterface({
   return (
     <Card className="border-gray-800 bg-gray-900/30 backdrop-blur-md overflow-hidden h-full flex flex-col">
       <div className="p-2 border-b border-gray-800 bg-gray-900/50 flex justify-between items-center">
-        <div className="text-sm font-medium text-white">
-          {activeSession.title}
-        </div>
+        <div className="text-sm font-medium text-white">{activeSession.title}</div>
         <div className="text-sm text-gray-400 flex items-center">
           <Clock className="h-4 w-4 mr-1" />
           {currentTime}
@@ -364,7 +381,7 @@ export default function ChatInterface({
               <X className="h-5 w-5" />
             </Button>
             <img
-              src={viewingImage}
+              src={viewingImage || "/placeholder.svg"}
               alt="Enlarged view"
               className="max-h-screen max-w-full object-contain rounded-lg"
               onClick={(e) => e.stopPropagation()}
