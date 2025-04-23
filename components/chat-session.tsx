@@ -7,14 +7,19 @@ import { Button } from "@/components/ui/button"
 
 interface ChatSessionProps {
   session: Session
+  onImageClick?: (imageUrl: string) => void
 }
 
-export default function ChatSession({ session }: ChatSessionProps) {
+export default function ChatSession({ session, onImageClick }: ChatSessionProps) {
   const [viewingImage, setViewingImage] = useState<string | null>(null)
 
   // Handle image click to show the full-screen view
   const handleImageClick = (imageUrl: string) => {
-    setViewingImage(imageUrl)
+    if (onImageClick) {
+      onImageClick(imageUrl)
+    } else {
+      setViewingImage(imageUrl)
+    }
   }
 
   return (
